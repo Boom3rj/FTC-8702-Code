@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.teamcode.Utils;
@@ -43,8 +44,8 @@ public class MecanumOpMode extends LinearOpMode {
         rearLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         rearRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        Launcher.setDirection(DcMotor.Direction.REVERSE);
-
+        Launcher.setDirection(DcMotor.Direction.FORWARD);
+        int flywheelSpeed = 1200;
         waitForStart();
         runtime.reset();
 
@@ -59,34 +60,44 @@ public class MecanumOpMode extends LinearOpMode {
             if (gamepad1.right_bumper) {
                 halfSpeed = 2;
             }
-            if (intake){
+            if (intake) {
                 Intake.setPower(1);
-            }else if (unintake){
+            } else if (unintake) {
                 Intake.setPower(-1);
-            }else {
+            } else {
                 Intake.setPower(0);
             }
-
+            if (gamepad2.dpad_up){
+                flywheelSpeed += 1;
+            } else if (gamepad2.dpad_down){
+                flywheelSpeed += -1;
+            }
+            telemetry.addData("Set flywheel speed: ", flywheelSpeed);
             // Setup a variable for each drive wheel to save power level for telemetry
             double frontLeftPower;
             double rearLeftPower;
             double frontRightPower;
             double rearRightPower;
             //Calculate wheel power
-            frontLeftPower = Range.clip((-forward + rotation + strafe)/halfSpeed, -1.0, 1.0);
-            frontRightPower = Range.clip((forward + rotation + strafe)/halfSpeed, -1.0, 1.0);
-            rearLeftPower = Range.clip((-forward + rotation - strafe)/halfSpeed, -1.0, 1.0);
-            rearRightPower = Range.clip((forward + rotation - strafe)/halfSpeed, -1.0, 1.0);
+            frontLeftPower = Range.clip((-forward + rotation + strafe) / halfSpeed, -1.0, 1.0);
+            frontRightPower = Range.clip((forward + rotation + strafe) / halfSpeed, -1.0, 1.0);
+            rearLeftPower = Range.clip((-forward + rotation - strafe) / halfSpeed, -1.0, 1.0);
+            rearRightPower = Range.clip((forward + rotation - strafe) / halfSpeed, -1.0, 1.0);
             // Send calculated power to wheels
             frontLeftDrive.setPower(frontLeftPower);
             frontRightDrive.setPower(frontRightPower);
             rearLeftDrive.setPower(rearLeftPower);
             rearRightDrive.setPower(rearRightPower);
             if (gamepad2.a) {
-                Launcher.setPower(utils.setVelo(-1250, (int) Launcher.getVelocity()));
-            }else {
+                Launcher.setPower(utils.setVelo(-flywheelSpeed, (int) Launcher.getVelocity()));
+                telemetry.addData("tps: ", Launcher.getVelocity());
+                telemetry.addData("Power: ", utils.setVelo(-flywheelSpeed, (int) Launcher.getVelocity()));
+            } else {
                 Launcher.setPower(0);
             }
+            telemetry.addData("tps: ", Launcher.getVelocity());
+            telemetry.addData("Power: ", utils.setVelo(-flywheelSpeed, (int) Launcher.getVelocity()));
+            telemetry.update();
         }
     }
 }
