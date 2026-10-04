@@ -86,9 +86,9 @@ public class MecanumOpMode extends LinearOpMode {
                 loader1.setPower(0);
                 loader2.setPower(0);
             }
-            if (gamepad2.dpad_up){
+            if (gamepad1.dpad_up){
                 flywheelSpeed += 1;
-            } else if (gamepad2.dpad_down){
+            } else if (gamepad1.dpad_down){
                 flywheelSpeed += -1;
             }
             telemetry.addData("Set flywheel speed: ", flywheelSpeed);
