@@ -3,9 +3,11 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.teamcode.Utils;
@@ -19,7 +21,8 @@ public class MecanumOpMode extends LinearOpMode {
 
     private DcMotor Intake = null;
     private DcMotorEx Launcher = null;
-
+    private CRServo loader1 = null;
+    private CRServo loader2 = null;
     private Utils utils = null;
 
     @Override
@@ -37,6 +40,8 @@ public class MecanumOpMode extends LinearOpMode {
         rearRightDrive = hardwareMap.get(DcMotor.class, "rearRightDrive");
         Intake = hardwareMap.get(DcMotor.class, "intake");
         Launcher = hardwareMap.get(DcMotorEx.class, "launcher");
+        loader1 = hardwareMap.get(CRServo.class, "loader1");
+        loader2 = hardwareMap.get(CRServo.class, "loader2");
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // Pushing the left stick forward MUST make robot go forward. So adjust these two lines based on your first test drive.
         // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
@@ -44,7 +49,7 @@ public class MecanumOpMode extends LinearOpMode {
         rearLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
         rearRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        Launcher.setDirection(DcMotor.Direction.FORWARD);
+        Launcher.setDirection(DcMotor.Direction.REVERSE);
         int flywheelSpeed = 1200;
         waitForStart();
         runtime.reset();
@@ -55,6 +60,8 @@ public class MecanumOpMode extends LinearOpMode {
             double rotation = gamepad1.right_stick_x;
             boolean intake = gamepad2.dpad_left;
             boolean unintake = gamepad2.dpad_right;
+            boolean load = gamepad2.right_bumper;
+            boolean unload = gamepad2.left_bumper;
             //Turn on half speed for robot movements
             int halfSpeed = 1;
             if (gamepad1.right_bumper) {
@@ -66,6 +73,18 @@ public class MecanumOpMode extends LinearOpMode {
                 Intake.setPower(-1);
             } else {
                 Intake.setPower(0);
+                loader1.setPower(0);
+                loader2.setPower(0);
+            }
+            if (load){
+                loader1.setPower(1);
+                loader2.setPower(-1);
+            } else if (unload) {
+                loader1.setPower(-1);
+                loader2.setPower(1);
+            }else {
+                loader1.setPower(0);
+                loader2.setPower(0);
             }
             if (gamepad2.dpad_up){
                 flywheelSpeed += 1;
