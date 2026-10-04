@@ -13,7 +13,7 @@ public class Utils {
         // finds the difference of current speed and where it needs to be
         double power = 0;
 
-        power = (dif + 100) / 100;
+        power = (dif + 80) / 120;
             // (difference + offset) / Agressiveness(lower is more agressive) NEED TO TUNE
 
 
