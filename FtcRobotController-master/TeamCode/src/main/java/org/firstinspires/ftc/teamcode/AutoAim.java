@@ -9,7 +9,10 @@ import java.util.List;
 
 public class AutoAim {
     public static double tx = 0;
-
+    public double P = 1;
+    public double I = 0.2;
+    public double M = 2000;
+    public double turretLimit = 1250;
     public void init() {
         // Initialization handled in main opmode to avoid duplicate hardware maps
     }
@@ -19,9 +22,6 @@ public class AutoAim {
         double turretOutput =0;
         double speed = Turret.getVelocity();
         double distToTarget = target - Turret.getCurrentPosition();
-        double P = 1;
-        double I = 0.2;
-        double M = 2000;
         //see if there is a target position if not use limelight
         if (target != 0){
             //PI (PID - D)
@@ -36,11 +36,16 @@ public class AutoAim {
                 if (detectedTagId == (int) tID) {
                     tx = detectedTag.getTargetXDegrees();
                     //multiply degrees by ticks per degree
-                    double angToTarget = (tx*5.97) - Turret.getCurrentPosition();
+                    double angToTarget = (tx*5.97) + Turret.getCurrentPosition();
                     //use new target (angToTarget) to aim PI
                     turretOutput = ((angToTarget * P) - (speed * I)) / M;
                 }
             }
+        }
+        if (turretOutput > 0 && Turret.getCurrentPosition() > turretLimit){
+            turretOutput = 0;
+        } else if (turretOutput < 0 && Turret.getCurrentPosition() < -turretLimit) {
+            turretOutput = 0;
         }
         return turretOutput;
     }

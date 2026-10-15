@@ -202,7 +202,7 @@ public class MecanumDriveLIMELIGHTAutoAiming extends LinearOpMode {
 
             if (gamepad1.x) {
                 // Call your find method and pass launcher velocity and target ID (e.g., 20)
-                Turret.setPower((autoAim.find(2000,23, result)));
+                Turret.setPower((autoAim.find(538,23, result)));
             } else {
                 Turret.setPower(0);
             }
