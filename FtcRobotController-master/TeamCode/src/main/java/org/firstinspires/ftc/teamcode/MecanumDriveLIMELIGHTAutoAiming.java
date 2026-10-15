@@ -1,0 +1,243 @@
+package org.firstinspires.ftc.teamcode;
+
+
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+
+@TeleOp(name="8702 AutoAiming TeleOp", group="8702")
+public class MecanumDriveLIMELIGHTAutoAiming extends LinearOpMode {
+    private final ElapsedTime runtime = new ElapsedTime();
+    private DcMotor rearLeftDrive = null;
+    private DcMotor frontLeftDrive = null;
+    private DcMotor rearRightDrive = null;
+    private DcMotor frontRightDrive = null;
+    private DcMotor Intake = null;
+    private DcMotorEx Launcher = null;
+    public static DcMotorEx Turret = null;
+
+    private CRServo loader1 = null;
+    private CRServo loader2 = null;
+    private Utils utils = null;
+    private AutoAim autoAim = new AutoAim();
+    private Limelight3A limelight = null;
+    private boolean xPressedLast = false;
+    private boolean targetBlueAlliance = true; // Default to Blue alliance
+
+    @Override
+    public void runOpMode() {
+        // Example comment
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
+
+        // Initialize the hardware variables. Note that the strings used here as parameters
+        // to 'get' must correspond to the names assigned during the robot configuration
+        // step (using the FTC Robot Controller app on the phone).
+        frontLeftDrive = hardwareMap.get(DcMotor.class, "frontLeftDrive");
+        frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
+        rearLeftDrive = hardwareMap.get(DcMotor.class, "rearLeftDrive");
+        rearRightDrive = hardwareMap.get(DcMotor.class, "rearRightDrive");
+        Intake = hardwareMap.get(DcMotor.class, "intake");
+        Launcher = hardwareMap.get(DcMotorEx.class, "launcher");
+        loader1 = hardwareMap.get(CRServo.class, "loader1");
+        loader2 = hardwareMap.get(CRServo.class, "loader2");
+        Turret = hardwareMap.get(DcMotorEx.class, "turret");
+        Turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
+        // Pushing the left stick forward MUST make robot go forward. So adjust these two lines based on your first test drive.
+        // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
+        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        rearLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        rearRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        Launcher.setDirection(DcMotor.Direction.REVERSE);
+
+        int flywheelSpeed = 1200;
+
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(8);
+        limelight.start();
+
+        autoAim.init();
+
+        waitForStart();
+        runtime.reset();
+
+        while (opModeIsActive()) {
+            double forward = gamepad1.left_stick_y;
+            double strafe = gamepad1.left_stick_x;
+            double rotation = gamepad1.right_stick_x;
+            boolean intake = gamepad2.dpad_left;
+            boolean unintake = gamepad2.dpad_right;
+            boolean load = gamepad2.right_bumper;
+            boolean unload = gamepad2.left_bumper;
+
+            //Turn on half speed for robot movements
+            int halfSpeed = 1;
+            if (gamepad1.right_bumper) {
+                halfSpeed = 2;
+            }
+            if (intake) {
+                Intake.setPower(1);
+            } else if (unintake) {
+                Intake.setPower(-1);
+            } else {
+                Intake.setPower(0);
+                loader1.setPower(0);
+                loader2.setPower(0);
+            }
+            if (load){
+                loader1.setPower(1);
+                loader2.setPower(-1);
+            } else if (unload) {
+                loader1.setPower(-1);
+                loader2.setPower(1);
+            }else {
+                loader1.setPower(0);
+                loader2.setPower(0);
+            }
+            if (gamepad1.dpad_up){
+                flywheelSpeed += 1;
+            } else if (gamepad1.dpad_down){
+                flywheelSpeed += -1;
+            }
+            telemetry.addData("Set flywheel speed: ", flywheelSpeed);
+
+            //↓ --------------- ↓LIMELIGHT↓ --------------- ↓
+
+            // Switch alliance with gamepad1 A
+            if (gamepad1.a && !xPressedLast) {
+                targetBlueAlliance = !targetBlueAlliance;
+            }
+            xPressedLast = gamepad1.x;
+
+            LLResult result = limelight.getLatestResult();
+            LLResultTypes.FiducialResult targetTag = null;
+
+            double targetDistanceInches = 0.0;
+
+            // Find alliance tag
+            double bestAngle = Double.MAX_VALUE;
+
+            if (result != null && result.isValid()) {
+                for (LLResultTypes.FiducialResult fiducial
+                        : result.getFiducialResults()) {
+
+                    int id = fiducial.getFiducialId();
+                    boolean isMatch;
+
+                    if (targetBlueAlliance) {
+                        isMatch = id >= 31 && id <= 37;
+                    } else {
+                        isMatch = id >= 38 && id <= 41;
+                    }
+
+                    if (isMatch) {
+                        double angle = Math.abs(
+                                fiducial.getTargetXDegrees()
+                        );
+
+                        if (angle < bestAngle) {
+                            bestAngle = angle;
+                            targetTag = fiducial;
+                        }
+                    }
+                }
+            }
+
+            telemetry.addData(
+                    "Target Alliance",
+                    targetBlueAlliance ? "Blue Team" : "Red Team"
+            );
+
+            if (targetTag != null) {
+                telemetry.addData("Limelight", "Target Found");
+                telemetry.addData("Matched Tag ID",
+                        targetTag.getFiducialId());
+
+                telemetry.addData("Target X Degrees",
+                        "%.2f",
+                        targetTag.getTargetXDegrees());
+
+                // Gets the 3D position of the tag relative to the camera
+                Pose3D targetPose =
+                        targetTag.getTargetPoseCameraSpace();
+
+                if (targetPose != null) {
+                    double x = targetPose.getPosition()
+                            .toUnit(DistanceUnit.INCH).x;
+                    double y = targetPose.getPosition()
+                            .toUnit(DistanceUnit.INCH).y;
+                    double z = targetPose.getPosition()
+                            .toUnit(DistanceUnit.INCH).z;
+
+                    // Telemetry for individual X, Y, Z positions
+                    telemetry.addData("Target X", "%.2f inches", x);
+                    telemetry.addData("Target Y", "%.2f inches", y);
+                    telemetry.addData("Target Z", "%.2f inches", z);
+
+                } else {
+                    telemetry.addData("Target Distance", "Pose unavailable");
+                }
+
+            } else {
+                telemetry.addData("Limelight",
+                        result != null && result.isValid()
+                                ? "No matching alliance tag"
+                                : "No valid result");
+            }
+            //↑ --------------- ↑LIMELIGHT↑ --------------- ↑
+
+            //↓ --------------- ↓AutoAim↓ --------------- ↓
+            double fld, rld, frd, rrd;
+
+            if (gamepad1.x) {
+                // Call your find method and pass launcher velocity and target ID (e.g., 20)
+                Turret.setPower((autoAim.find(2000,23, result)));
+            } else {
+                Turret.setPower(0);
+            }
+            //↑ --------------- ↑AutoAim↑ --------------- ↑
+
+            // Setup a variable for each drive wheel to save power level for telemetry
+            double frontLeftPower;
+            double rearLeftPower;
+            double frontRightPower;
+            double rearRightPower;
+
+            //Calculate wheel power
+            frontLeftPower = Range.clip((-forward + rotation + strafe) / halfSpeed, -1.0, 1.0);
+            frontRightPower = Range.clip((forward + rotation + strafe) / halfSpeed, -1.0, 1.0);
+            rearLeftPower = Range.clip((-forward + rotation - strafe) / halfSpeed, -1.0, 1.0);
+            rearRightPower = Range.clip((forward + rotation - strafe) / halfSpeed, -1.0, 1.0);
+
+            // Send calculated power to wheels
+            frontLeftDrive.setPower(frontLeftPower);
+            frontRightDrive.setPower(frontRightPower);
+            rearLeftDrive.setPower(rearLeftPower);
+            rearRightDrive.setPower(rearRightPower);
+
+            if (gamepad2.a) {
+                Launcher.setPower(utils.setVelo(-flywheelSpeed, (int) Launcher.getVelocity()));
+                telemetry.addData("tps: ", Launcher.getVelocity());
+                telemetry.addData("Power: ", utils.setVelo(-flywheelSpeed, (int) Launcher.getVelocity()));
+            } else {
+                Launcher.setPower(0);
+            }
+
+            telemetry.addData("tps: ", Launcher.getVelocity());
+            telemetry.addData("Power: ", utils.setVelo(-flywheelSpeed, (int) Launcher.getVelocity()));
+            telemetry.addData("Turret Pos: ", Turret.getCurrentPosition());
+            telemetry.update();
+        }
+    }
+}
