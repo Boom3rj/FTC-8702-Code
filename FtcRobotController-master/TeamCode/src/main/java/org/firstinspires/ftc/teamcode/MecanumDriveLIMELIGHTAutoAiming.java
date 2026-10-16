@@ -32,6 +32,8 @@ public class MecanumDriveLIMELIGHTAutoAiming extends LinearOpMode {
     private Limelight3A limelight = null;
     private boolean xPressedLast = false;
     private boolean targetBlueAlliance = true; // Default to Blue alliance
+    public boolean aimToggle = false;
+
 
     @Override
     public void runOpMode() {
@@ -52,6 +54,7 @@ public class MecanumDriveLIMELIGHTAutoAiming extends LinearOpMode {
         loader2 = hardwareMap.get(CRServo.class, "loader2");
         Turret = hardwareMap.get(DcMotorEx.class, "turret");
         Turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // Pushing the left stick forward MUST make robot go forward. So adjust these two lines based on your first test drive.
         // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
@@ -80,6 +83,7 @@ public class MecanumDriveLIMELIGHTAutoAiming extends LinearOpMode {
             boolean unintake = gamepad2.dpad_right;
             boolean load = gamepad2.right_bumper;
             boolean unload = gamepad2.left_bumper;
+            boolean aimToggle = false;
 
             //Turn on half speed for robot movements
             int halfSpeed = 1;
@@ -118,7 +122,7 @@ public class MecanumDriveLIMELIGHTAutoAiming extends LinearOpMode {
             if (gamepad1.a && !xPressedLast) {
                 targetBlueAlliance = !targetBlueAlliance;
             }
-            xPressedLast = gamepad1.x;
+            xPressedLast = gamepad1.a;
 
             LLResult result = limelight.getLatestResult();
             LLResultTypes.FiducialResult targetTag = null;
@@ -202,7 +206,9 @@ public class MecanumDriveLIMELIGHTAutoAiming extends LinearOpMode {
 
             if (gamepad1.x) {
                 // Call your find method and pass launcher velocity and target ID (e.g., 20)
-                Turret.setPower((autoAim.find(538,23, result)));
+                Turret.setPower((autoAim.find(-200,31, result)));
+            } else if (gamepad1.a) {
+                Turret.setPower((autoAim.find(0,31, result)));
             } else {
                 Turret.setPower(0);
             }

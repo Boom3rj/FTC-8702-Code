@@ -10,15 +10,17 @@ import java.util.List;
 public class AutoAim {
     public static double tx = 0;
     public double P = 1;
-    public double I = 0.2;
-    public double M = 2000;
-    public double turretLimit = 1250;
+    public double I = 0.1;
+    public double M = 1000;
+    public double turretLimit = 315;
+    public double turretLead = 0;
+    public double lastX = 0;
+    public double leadMult = 0;
     public void init() {
         // Initialization handled in main opmode to avoid duplicate hardware maps
     }
 
     public double find(double target, double tID, LLResult result) {
-
         double turretOutput =0;
         double speed = Turret.getVelocity();
         double distToTarget = target - Turret.getCurrentPosition();
@@ -35,8 +37,12 @@ public class AutoAim {
                 int detectedTagId = detectedTag.getFiducialId();
                 if (detectedTagId == (int) tID) {
                     tx = detectedTag.getTargetXDegrees();
+                    if (lastX != 0) {
+                        turretLead = (tx - lastX) * leadMult;
+                    }
+                    lastX = tx;
                     //multiply degrees by ticks per degree
-                    double angToTarget = (tx*5.97) + Turret.getCurrentPosition();
+                    double angToTarget = (tx * 4.48) + Turret.getCurrentPosition() + turretLead;
                     //use new target (angToTarget) to aim PI
                     turretOutput = ((angToTarget * P) - (speed * I)) / M;
                 }
