@@ -42,9 +42,9 @@ public class AutoAim {
                     }
                     lastX = tx;
                     //multiply degrees by ticks per degree
-                    double angToTarget = (tx * 4.48) + Turret.getCurrentPosition() + turretLead;
-                    //use new target (angToTarget) to aim PI
-                    turretOutput = ((angToTarget * P) - (speed * I)) / M;
+                    double error = (-tx * 4.48) + turretLead;
+                    turretOutput = (error * P) - (speed * I) / M;
+
                 }
             }
         }
