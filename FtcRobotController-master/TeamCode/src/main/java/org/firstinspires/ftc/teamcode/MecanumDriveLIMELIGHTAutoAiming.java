@@ -64,7 +64,7 @@ public class MecanumDriveLIMELIGHTAutoAiming extends LinearOpMode {
         rearRightDrive.setDirection(DcMotor.Direction.FORWARD);
         Launcher.setDirection(DcMotor.Direction.REVERSE);
 
-        int flywheelSpeed = 1200;
+        int flywheelSpeed = 1090;
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(8);

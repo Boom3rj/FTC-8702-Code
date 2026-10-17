@@ -9,9 +9,9 @@ import java.util.List;
 
 public class AutoAim {
     public static double tx = 0;
-    public double P = 1;
+    public double P = 2;
     public double I = 0.1;
-    public double M = 1000;
+    public double M = 500;
     public double turretLimit = 315;
     public double turretLead = 0;
     public double lastX = 0;
@@ -43,7 +43,7 @@ public class AutoAim {
                     lastX = tx;
                     //multiply degrees by ticks per degree
                     double error = (-tx * 4.48) + turretLead;
-                    turretOutput = (error * P) - (speed * I) / M;
+                    turretOutput = ((error * P) - (speed * I)) / M;
 
                 }
             }
